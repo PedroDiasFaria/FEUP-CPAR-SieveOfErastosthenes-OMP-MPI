@@ -1,0 +1,9 @@
+1.	LU	factorization
+The LU factorization is a modified form of Gaussian elimination algorithm and is used to solve
+systems of linear equation, of the form Ax=b.
+1. Implement a sequential version.
+2. Implement a block oriented sequential version.
+3. Implement a shared memory version using OpenMP and OpenCL/CUDA (if available).
+4. Performance analysis of the implementations.
+The time complexity of the algorithm for a matrix of size (n,n) is Θ(2/3n^3).
+Data range to consider (n): from 1000 to 6000, with a step of 1000.
