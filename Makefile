@@ -1,6 +1,6 @@
 all: matrizvector.cpp prodescalar.cpp
-	mpiCC matrizvector.cpp -o matrizvector -l papi -fopenmp -O2
-	mpiCC prodescalar.cpp -o prodescalar -l papi -fopenmp -O2
+	mpiCC.openmpi -o matrizvector matrizvector.cpp -O2
+	mpiCC.openmpi -o prodescalar prodescalar.cpp -O2
 
 clean:
 	rm -f *.o matrizvector prodescalar
