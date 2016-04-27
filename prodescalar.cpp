@@ -65,10 +65,9 @@ int main( int argc, char **argv)
 		delete [] v2;
    }
 
-   free(sv1);
-   free(sv2);
-  // delete [] sv1;
-  // delete [] sv2;
+
+  delete [] sv1;
+  delete [] sv2;
    	
    MPI_Finalize();
     

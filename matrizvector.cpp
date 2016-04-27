@@ -69,8 +69,8 @@ int main( int argc, char *argv[])
    }
 
 	// broadcast de lin, col a todos os processos
-   // 
-   //
+   MPI_Bcast(&lin, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&col, 1, MPI_INT, 0, MPI_COMM_WORLD);
    
    // reservar espaco para os dados, o ultimo processador podera ficar com zeros no fim
    maisum = (lin % size)==0 ? 0 : 1;
@@ -81,41 +81,46 @@ int main( int argc, char *argv[])
     	v2 = new float[col];
 
 
-	// distribui a matriz
-  MPI_Scatter(v1, nlinhas*col/size, MPI_INT, v1, nlinhas*col/size, MPI_INT, 0, MPI_COMM_WORLD);
-	//erro = 
+	// distribui a matriz  
+	erro = MPI_Scatter(v1, my_lin*col, MPI_FLOAT, sv1, my_lin*col, MPI_FLOAT, 0, MPI_COMM_WORLD);
 	printf("processo %d recebeu %d elementos, erro=%d\n",rank, my_lin*col, erro);    
  
  	// distribui vector
-  MPI_Bcast(v2, col, MPI_INT, 0, MPI_COMM_WORLD);
- 	//erro = 
+  
+ 	erro = MPI_Bcast(v2, col, MPI_FLOAT, 0, MPI_COMM_WORLD);
 	printf("processo %d recebeu vector de %d elementos, erro=%d\n",rank, col, erro);    
    
    // calcula produto matrix-vector
    my_r = new float[my_lin];
    
-   for(k=0; k<my_lin; k++)
+   for(k=0; k<my_lin; k++){
    	my_r[k] = produtoInterno(&sv1[k*col], v2, col);
+    printf("processo %d my_r[%d] = %f\n",rank, k, my_r[k]);
+   }
    	
    // processo 0 obtem resultado
+   erro = MPI_Gather(my_r, my_lin, MPI_FLOAT, r, my_lin, MPI_FLOAT, 0, MPI_COMM_WORLD); 
    if(rank == 0)
-   MPI_Gather(my_r, k, MPI_INT, r, nlinhas, MPI_INT, 0, MPI_COMM_WORLD);
-   //erro = 
-   	
+   printf("processo %d 'GATHER' erro=%d\n",rank, erro);
+
+
    if (rank == 0)
    {	printf("Vector Resultado\n");
    	for(k=0; k<lin; k++)
    		printf("%.1f ", r[k]);
    	printf("\n");
-	}
-	   	
-   MPI_Finalize();
+	}   
+   if(rank == 0){
+    delete [] v1;
+    delete [] v2;
+   }
    
-   delete [] v1;
-   delete [] v2;
    delete [] sv1;
    delete [] my_r;
+
    if (r != NULL) delete [] r;
     
+   MPI_Finalize();
+
    return 0;
 }
