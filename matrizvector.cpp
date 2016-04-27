@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <cstdlib>
 #include "mpi.h"
 
 
@@ -34,13 +35,15 @@ void preencheMatriz(float *v, int nlin, int ncol, int tlin)
 
 
 
-int main( int argc, char **argv)
+int main( int argc, char *argv[])
 {
    int rank, size, erro;
    float *v1, *v2, *sv1, *my_r, *r;
    int k, nlinhas, my_lin, maisum;
    int lin, col;
 
+  lin = atoi(argv[1]);
+  col = atoi(argv[2]);
     
    MPI_Init( &argc, &argv );
    MPI_Comm_size( MPI_COMM_WORLD, &size );
@@ -50,7 +53,10 @@ int main( int argc, char **argv)
    if (rank == 0)
    {
    	printf("Dimensoes: lins cols ? ");
-   	scanf("%d %d", &lin, &col);
+    printf("ARGC: %d\n", argc);
+    printf("LINHAS: %d\nCOLUNAS: %d\n", atoi(argv[1]), atoi(argv[2]));
+   	//scanf("%d %d", &lin, &col);
+
    	maisum = (lin % size)==0 ? 0 : 1;
    	nlinhas = ((lin/size)+maisum)*size;
    	v1 = new float[nlinhas*col];
@@ -63,9 +69,8 @@ int main( int argc, char **argv)
    }
 
 	// broadcast de lin, col a todos os processos
+   // 
    //
-   //
-   
    
    // reservar espaco para os dados, o ultimo processador podera ficar com zeros no fim
    maisum = (lin % size)==0 ? 0 : 1;
@@ -77,10 +82,12 @@ int main( int argc, char **argv)
 
 
 	// distribui a matriz
+  MPI_Scatter(v1, nlinhas*col/size, MPI_INT, v1, nlinhas*col/size, MPI_INT, 0, MPI_COMM_WORLD);
 	//erro = 
 	printf("processo %d recebeu %d elementos, erro=%d\n",rank, my_lin*col, erro);    
  
  	// distribui vector
+  MPI_Bcast(v2, col, MPI_INT, 0, MPI_COMM_WORLD);
  	//erro = 
 	printf("processo %d recebeu vector de %d elementos, erro=%d\n",rank, col, erro);    
    
@@ -91,6 +98,8 @@ int main( int argc, char **argv)
    	my_r[k] = produtoInterno(&sv1[k*col], v2, col);
    	
    // processo 0 obtem resultado
+   if(rank == 0)
+   MPI_Gather(my_r, k, MPI_INT, r, nlinhas, MPI_INT, 0, MPI_COMM_WORLD);
    //erro = 
    	
    if (rank == 0)
