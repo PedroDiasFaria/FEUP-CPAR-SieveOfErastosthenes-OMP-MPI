@@ -1,0 +1,7 @@
+all: openmp.c openmpnotshared.c
+	gcc openmp.c -o openmp -lm -fopenmp -O2
+	gcc openmpnotshared.c -o openmpnotshared -lm -fopenmp -O2
+
+clean:
+	rm -f *.o openmp
+	rm -f *.o openmpnotshared
