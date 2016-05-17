@@ -1,8 +1,7 @@
 #!/bin/bash
 clear
 echo "Execute Makefile"
-make clean
-make
+make openmp
 echo "--- --- --- --- --- --- --- ---"
 echo ""
 echo ""
