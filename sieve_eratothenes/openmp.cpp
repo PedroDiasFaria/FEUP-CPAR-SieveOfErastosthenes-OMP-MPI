@@ -20,8 +20,9 @@ typedef long long number;
 const number BILLION = 1000000000;
 const number two_pow_25 = 33554432;
 const number two_pow_32 = 4294967296;
-const int L1 = 256;   //L1 cache size
+const int L1 = 128;   //256;   //L1 cache size  - 128@FEUP; 256@Home
 const int L2 = 1024;  //L2 cache size
+const int DEBUG = 0;
 
 /*Primes Calculation*/
 number sieveBySequence(number upperBound, int nr_threads){
@@ -71,7 +72,7 @@ number sieveBySequence(number upperBound, int nr_threads){
 }
 
 
-//Block data decomposition
+//Segmented Sieve
 number countByBlock(number lowerBound, number upperBound) {
 
   number i, j;
@@ -88,13 +89,15 @@ number countByBlock(number lowerBound, number upperBound) {
     exit(0);
   }
 
-  for (i = 0; i <= prime_arraySize; i++){
+  for(i = 0; i <= prime_arraySize; i++){
     isPrime[i] = 1;
   }
 
-  //TODO refactor
-  // Main loop
-  for (i = 3; i*i <= upperBound; i+=2){
+  //For optimization purpose, we calculate comparable variables
+  //out of the for() statement
+  number iSquare;
+  //Segmented Sieve for odd numbers
+  for (i = 3, iSquare=i*i; iSquare <= upperBound; i+=2, iSquare=i*i){
 
     // Skip numbers before block's range
     //cout << "LBound = " << lowerBound << " | UBound = " << upperBound << endl;
@@ -102,22 +105,32 @@ number countByBlock(number lowerBound, number upperBound) {
     //cout << "StartValue is = " << startValue << endl;
     if (startValue < i*i) {
       startValue = i*i;
-      //cout << "\tstartValue changed to = " << startValue << ". because < i*i" << endl;
+      if(DEBUG)
+      cout << "\tstartValue changed to = " << startValue << ". because < i*i" << endl;
     }
 
-    // Ensuring start value is off
+    if(DEBUG)
+    cout << "startValue is = " << startValue << endl;
+    //We only calculate from odd numbers
     if ((startValue % 2) == 0){
       startValue += i;
-      //cout << "\tstartvalue is pair, so changed to svalue + i : " << startValue << endl;
+      if(DEBUG)
+      cout << "\tstartvalue is pair, so changed to svalue + i : " << startValue << endl;
     }
 
-    // Secondary Loop
-    for (j = startValue; j<=upperBound; j+=2*i){
+    //Optimization purpose
+    number iDouble = 2*i;
+    //Removing all non-prime odds
+    for (j = startValue; j<=upperBound; j+=iDouble){
       number nonPrimeIndex = j - lowerBound;
       isPrime[nonPrimeIndex/2] = 0;
-      //cout << "\t\tstartValue is <= upperBound so nonPrimeIndex= " << nonPrimeIndex << ". j= " << j << ". isPrime[" << nonPrimeIndex/2 <<"] = 0." << endl;
+      if(DEBUG)
+        cout << "\t   startValue is <= upperBound so nonPrimeIndex= " << nonPrimeIndex << ". j= " << j << ". isPrime[" << nonPrimeIndex/2 <<"] = 0." << endl;
     }
   }
+
+  if(DEBUG)
+  cout << "Iteration ended at i= " << i << endl;
 
   //Counting primes on array
   number prime_count = 0;
@@ -139,7 +152,14 @@ number countByBlock(number lowerBound, number upperBound) {
 
 number sieveByBlock(number upperBound, int nr_threads){
 
-  number blockSize = L1 * L2;
+  //TODO adjust size!
+
+  number blockSize;
+  if(DEBUG)
+  blockSize = 100;
+  if(!DEBUG)
+  blockSize = L1 * L2;
+
   number blockLowerBound, prime_count = 0;
 
   omp_set_num_threads(nr_threads);

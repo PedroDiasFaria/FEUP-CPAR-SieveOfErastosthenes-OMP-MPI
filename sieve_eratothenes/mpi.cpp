@@ -17,79 +17,113 @@ typedef long long number;
 const number BILLION = 1000000000;
 const number two_pow_25 = 33554432;
 const number two_pow_32 = 4294967296;
-const int L1 = 256;   //L1 cache size
+const int L1 = 128;   //256;   //L1 cache size  - 128@FEUP; 256@Home
 const int L2 = 1024;  //L2 cache size
+const int DEBUG = 0;
 
 /*Algorithms*/
-//TODO Refactor - I don't use limitSqrt for nothing
   //Implement like the openmp, just divide the data in blocks then let the rest process
-number sieveMPI(char* isPrime, number limitSqrt, number start, number end) {
-	// Declaring array and setting all numbers to prime
-	number arraySize = (end - start + 1) / 2;
-	char* isPrimeBlock = (char*)malloc(arraySize*sizeof(char));
-	number i, j;
-	for(i = 0; i <= arraySize; i++){
-		isPrimeBlock[i] = 1;
-	}
+number sieveMPI(number lowerBound, number upperBound) {
 
-	// Main loop
-	number iDouble;
-	for (i = 3; i*i <= end; i += 2){
-		if(isPrime[i>>1]){
-		// Skip numbers before block's range
-			number startValue = ((start + i - 1) / i)*i;
-			if (startValue < i*i) {
-				startValue = i*i;
-			}
-		// Ensuring start value is off
-			if ((startValue % 2) == 0){
-				startValue += i;
-			}
+  number i, j;
+  //All odd numbers set to primes
+  //Since only odd numbers can be primes, we trim down the array to half it's size
+  //(excluding all even numbers from the start)
+  number prime_arraySize = (upperBound - lowerBound + 1)/2; //+1 to include the last number
+  //cout << "\n---\nLower bound: " << lowerBound << ". Upper bound: " << upperBound << ". Prime ArraySize: " << prime_arraySize << "\n---\n";
+  char *isPrime = NULL;
+  isPrime = (char*)malloc(prime_arraySize*sizeof(char));
 
-		//printf("Start: %lld\n", startValue);
+  if(isPrime == NULL){
+    cout << "Memory allocation failed (isPrime)\n";
+    exit(0);
+  }
 
-		// Secondary Loop
-			iDouble = 2 * i;
-			for (j = startValue; j <= end; j += iDouble){
-				number index = j - start;
-				isPrimeBlock[index >> 1] = 0;
-			}
+  for (i = 0; i <= prime_arraySize; i++){
+    isPrime[i] = 1;
+  }
 
-		}
-	}
+  //For optimization purpose, we calculate comparable variables
+  //out of the for() statement
+  number iSquare;
+  //Segmented Sieve for odd numbers
+  for (i = 3, iSquare=i*i; iSquare <= upperBound; i+=2, iSquare=i*i){
 
+    // Skip numbers before block's range
+    //cout << "LBound = " << lowerBound << " | UBound = " << upperBound << endl;
+    number startValue = ((lowerBound + i - 1)/i)*i;
+    //cout << "StartValue is = " << startValue << endl;
+    if (startValue < i*i) {
+      startValue = i*i;
+      if(DEBUG)
+      cout << "\tstartValue changed to = " << startValue << ". because < i*i" << endl;
+    }
 
-	// Counting number of primes found
-	number prime_count = 0;
+    if(DEBUG)
+    cout << "startValue is = " << startValue << endl;
+    //We only calculate from odd numbers
+    if ((startValue % 2) == 0){
+      startValue += i;
+      if(DEBUG)
+      cout << "\tstartvalue is pair, so changed to svalue + i : " << startValue << endl;
+    }
 
-	for (i = 0; i < arraySize; i++) {
-		prime_count += isPrimeBlock[i];
-	}
+    //Optimization purpose
+    number iDouble = 2*i;
+    //Removing all non-prime odds
+    for (j = startValue; j<=upperBound; j+=iDouble){
+      number nonPrimeIndex = j - lowerBound;
+      isPrime[nonPrimeIndex/2] = 0;
+      //cout << "\t\tstartValue is <= upperBound so nonPrimeIndex= " << nonPrimeIndex << ". j= " << j << ". isPrime[" << nonPrimeIndex/2 <<"] = 0." << endl;
+    }
+  }
 
-	if (start <= 2){
-		prime_count++; // If it's the first block, 2 is an even prime number
-	}
+  if(DEBUG)
+  cout << "Iteration ended at i= " << i << endl;
 
-	// Freeing memory space
-	return prime_count;
+  //Counting primes on array
+  number prime_count = 0;
+
+  // 2 is the only even prime number, added to the count if it's in the block
+  if (lowerBound == 2){
+    prime_count++;
+  }
+
+  for (i = 0; i < prime_arraySize; i++) {
+    prime_count += isPrime[i];
+  }
+
+    //  cout << "|||prime count neste processo: " << prime_count << "|||" << endl << endl;
+
+  free(isPrime);
+  return prime_count;
 }
 
-number sieveHybrid(char* isPrime, number limitSqrt, number start, number blockEnd) {
-	omp_set_num_threads(omp_get_num_procs());
-	number i, j, blockSize = L1*L2;
+number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
+  
+  number blockSize;
+  if(DEBUG)
+  blockSize = 100;
+  if(!DEBUG)
+  blockSize = L1 * L2;
 
-	number prime_count = 0;
+  number blockLowerBound, blockUpperBound;
+  number prime_count = 0;
 
-	// Main Loop
-	#pragma omp parallel for reduction (+:prime_count) shared(isPrime) schedule(dynamic)
-	for (start = start; start <= blockEnd; start += blockSize){
-		number end = start + blockSize;
-		if (end > blockEnd){
-			end = blockEnd;
-		}
+  omp_set_num_threads(nr_threads);
+  clock_gettime(CLOCK_REALTIME, &startTime);
 
-		prime_count += sieveMPI(isPrime, limitSqrt, start, end);
-	}
+  // Main Loop
+  #pragma omp parallel for reduction (+:prime_count) schedule (dynamic)
+    for (blockLowerBound = lowerBound; blockLowerBound <= upperBound; blockLowerBound += blockSize){
+      number blockUpperBound = blockLowerBound + blockSize;
+      if (blockUpperBound > upperBound){
+        blockUpperBound = upperBound;
+      }
+
+    prime_count += sieveMPI(blockLowerBound, blockUpperBound);
+  }
+
 	return prime_count;
 
 }
@@ -130,21 +164,9 @@ int main (int argc, char *argv[])
       nr_threads = atoi(argv[3]);
   }
 
-  switch(opt){
-    case 1:
-      cout << "Executing as a Distributed Memory System" << endl;
-      break;
-    case 2:
-      cout << "Executing as Hybrid System" << endl;
-      break;
-    default:
-      cout << "Wrong option! opt=" << opt << ". Please use 1 or 2." << endl;
-      exit(0);
-      break;
-  }
-
     /*Variables to use in MPI world*/
     int thread_id;
+    int world_size;
     number i, j;
     number prime_count;
 
@@ -152,43 +174,35 @@ int main (int argc, char *argv[])
 
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &thread_id);
-    MPI_Comm_size(MPI_COMM_WORLD, &nr_threads);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    //http://www.algorithmist.com/index.php/Prime_Sieve_of_Eratosthenes
-    //Trial Division Algorithm
-    number limitSqrt = (number)sqrt((double)limit);
-    number prime_arraySize = (limitSqrt-1)/2;
-    char *isPrime = NULL;
-    isPrime = (char*)malloc(prime_arraySize*sizeof(char));
-
-    if(isPrime == NULL){
-      cout << "Memory allocation failed (isPrime)\n";
-      exit(0);
-    }
-
-    for(i = 0; i < prime_arraySize; i++){
-      isPrime[i] = 1;
+    if(thread_id == 0){
+      switch(opt){
+        case 1:
+          cout << "Executing as a Distributed Memory System in " << world_size << " Cores." << endl;
+          break;
+        case 2:
+          cout << "Executing as Hybrid System in " << world_size << " Cores and " << nr_threads << " threads PER Core." <<  endl;
+          break;
+        default:
+          cout << "Wrong option! opt=" << opt << ". Please use 1 or 2." << endl;
+          exit(0);
+          break;
+      }
     }
 
     clock_gettime(CLOCK_REALTIME, &startTime);
 
-    for(i=3; i<=limitSqrt; i+=2){
-      if(isPrime[i>>1]){
-        for(j=i*i; j<=limitSqrt; j+=2*i){
-          isPrime[i>>1]=0;
-        }
-      }
-    }
 
     if(thread_id == 0){
       //The remainder from sqrt(N) to N is divided by each thread
-      number blockSize = (limit-limitSqrt)/nr_threads;
+      number blockSize = limit/world_size;
       number bounds_buff[2];             //0 as the lowerBound, 1 as the upperBound of the block
-      number lowerBound = limitSqrt + blockSize;
+      number lowerBound = blockSize;      //First lowerBound is the 2nd thread's one = First upperBound of thread 0
 
-      for(i=1; i<nr_threads; i++){
+      for(i=1; i<world_size; i++){
         //The last thread receives the remainder from the 2nd last until N
-        if(i != nr_threads-1){
+        if(i != world_size-1){
           bounds_buff[0] = lowerBound;
           bounds_buff[1] = lowerBound + blockSize;
           lowerBound +=blockSize; //Increments the lower bound for next block
@@ -204,17 +218,18 @@ int main (int argc, char *argv[])
 
       switch(opt){
         case 1:
-          prime_count = sieveMPI(isPrime, limitSqrt, limitSqrt, limitSqrt+blockSize);
+          prime_count = sieveMPI(2, blockSize);
           break;
         case 2:
-          prime_count = sieveHybrid(isPrime, limitSqrt, limitSqrt, limitSqrt+blockSize);
+          prime_count = sieveHybrid(2, blockSize, nr_threads);
           break;
         default:
           break;
       }
 
       number prime_count_thread;
-      for(i=1; i<nr_threads; i++){
+
+      for(i=1; i<world_size; i++){
         MPI_Recv(&prime_count_thread, 1, MPI_LONG_LONG, i, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         prime_count += prime_count_thread;
       }
@@ -232,10 +247,10 @@ int main (int argc, char *argv[])
 
       switch(opt){
         case 1:
-          prime_count_thread = sieveMPI(isPrime, limitSqrt, bounds_buff[0], bounds_buff[1]);
+          prime_count_thread = sieveMPI(bounds_buff[0], bounds_buff[1]);
           break;
         case 2:
-          prime_count_thread = sieveHybrid(isPrime, limitSqrt, bounds_buff[0], bounds_buff[1]);
+          prime_count_thread = sieveHybrid(bounds_buff[0], bounds_buff[1], nr_threads);
           break;
         default:
           break;
