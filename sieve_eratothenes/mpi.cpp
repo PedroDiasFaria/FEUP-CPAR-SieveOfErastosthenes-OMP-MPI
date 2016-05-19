@@ -14,6 +14,8 @@ using namespace std;
 
 struct timespec startTime, endTime;
 typedef long long number;
+const number HUNDRED_THOUSAND = 100000;
+const number TEN_MILLION = 10000000;
 const number BILLION = 1000000000;
 const number two_pow_25 = 33554432;
 const number two_pow_32 = 4294967296;
@@ -49,9 +51,18 @@ number sieveMPI(number lowerBound, number upperBound) {
   //Segmented Sieve for odd numbers
   for (i = 3, iSquare=i*i; iSquare <= upperBound; i+=2, iSquare=i*i){
 
-    // Skip numbers before block's range
-    //cout << "LBound = " << lowerBound << " | UBound = " << upperBound << endl;
+    //Skipping multiples of 3, 5, 7, 11, 13 and 17
+    if (  (i >= 3  * 3  && i % 3  == 0)
+       || (i >= 5  * 5  && i % 5  == 0)
+       || (i >= 7  * 7  && i % 7  == 0)
+       || (i >= 11 * 11 && i % 11 == 0)
+       || (i >= 13 * 13 && i % 13 == 0)
+       || (i >= 17 * 17 && i % 17 == 0))
+      continue;
+
+    //Calculate offset of segmnent
     number startValue = ((lowerBound + i - 1)/i)*i;
+
     //cout << "StartValue is = " << startValue << endl;
     if (startValue < i*i) {
       startValue = i*i;
@@ -100,7 +111,7 @@ number sieveMPI(number lowerBound, number upperBound) {
 }
 
 number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
-  
+
   number blockSize;
   if(DEBUG)
   blockSize = 100;

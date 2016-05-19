@@ -2,6 +2,9 @@
 Program in C++ to test Sieve of Erastosthenes
 (i)in sequential mode, on a single CPU-Core;
 (ii)in parallel, on a shared memory system, using OpenMP
+
+based on
+https://gist.github.com/coderplay/3711760
 */
 
 #include <omp.h>
@@ -17,6 +20,8 @@ using namespace std;
 
 struct timespec startTime, endTime;
 typedef long long number;
+const number HUNDRED_THOUSAND = 100000;
+const number TEN_MILLION = 10000000;
 const number BILLION = 1000000000;
 const number two_pow_25 = 33554432;
 const number two_pow_32 = 4294967296;
@@ -80,7 +85,8 @@ number countByBlock(number lowerBound, number upperBound) {
   //Since only odd numbers can be primes, we trim down the array to half it's size
   //(excluding all even numbers from the start)
   number prime_arraySize = (upperBound - lowerBound + 1)/2; //+1 to include the last number
-  //cout << "\n---\nLower bound: " << lowerBound << ". Upper bound: " << upperBound << ". Prime ArraySize: " << prime_arraySize << "\n---\n";
+  if(DEBUG)
+  cout << "\n---\nLower bound: " << lowerBound << ". Upper bound: " << upperBound << ". Prime ArraySize: " << prime_arraySize << "\n---\n";
   char *isPrime = NULL;
   isPrime = (char*)malloc(prime_arraySize*sizeof(char));
 
@@ -99,10 +105,23 @@ number countByBlock(number lowerBound, number upperBound) {
   //Segmented Sieve for odd numbers
   for (i = 3, iSquare=i*i; iSquare <= upperBound; i+=2, iSquare=i*i){
 
-    // Skip numbers before block's range
-    //cout << "LBound = " << lowerBound << " | UBound = " << upperBound << endl;
+    //Skipping multiples of 3, 5, 7, 11, 13 and 17
+    if (  (i >= 3  * 3  && i % 3  == 0)
+       || (i >= 5  * 5  && i % 5  == 0)
+       || (i >= 7  * 7  && i % 7  == 0)
+       || (i >= 11 * 11 && i % 11 == 0)
+       || (i >= 13 * 13 && i % 13 == 0)
+       || (i >= 17 * 17 && i % 17 == 0))
+      continue;
+
+    //Calculate offset of segmnent
     number startValue = ((lowerBound + i - 1)/i)*i;
-    //cout << "StartValue is = " << startValue << endl;
+
+    if(DEBUG){
+    cout << "StartValue is = " << startValue << endl;
+    cout << "LBound = " << lowerBound << " | UBound = " << upperBound << endl;
+    }
+
     if (startValue < i*i) {
       startValue = i*i;
       if(DEBUG)
@@ -122,8 +141,8 @@ number countByBlock(number lowerBound, number upperBound) {
     number iDouble = 2*i;
     //Removing all non-prime odds
     for (j = startValue; j<=upperBound; j+=iDouble){
-      number nonPrimeIndex = j - lowerBound;
-      isPrime[nonPrimeIndex/2] = 0;
+      number nonPrimeIndex = (j - lowerBound)/2;
+      isPrime[nonPrimeIndex] = 0;
       if(DEBUG)
         cout << "\t   startValue is <= upperBound so nonPrimeIndex= " << nonPrimeIndex << ". j= " << j << ". isPrime[" << nonPrimeIndex/2 <<"] = 0." << endl;
     }
@@ -133,12 +152,8 @@ number countByBlock(number lowerBound, number upperBound) {
   cout << "Iteration ended at i= " << i << endl;
 
   //Counting primes on array
-  number prime_count = 0;
-
   // 2 is the only even prime number, added to the count if it's in the block
-  if (lowerBound == 2){
-    prime_count++;
-  }
+  number prime_count = (lowerBound == 2);
 
   for (i = 0; i < prime_arraySize; i++) {
     prime_count += isPrime[i];
@@ -156,7 +171,7 @@ number sieveByBlock(number upperBound, int nr_threads){
 
   number blockSize;
   if(DEBUG)
-  blockSize = 100;
+  blockSize = 7;
   if(!DEBUG)
   blockSize = L1 * L2;
 
@@ -168,7 +183,7 @@ number sieveByBlock(number upperBound, int nr_threads){
   // Main Loop
   #pragma omp parallel for reduction (+:prime_count)
     for (blockLowerBound = 2; blockLowerBound <= upperBound; blockLowerBound += blockSize){
-      number blockUpperBound = blockLowerBound + blockSize;
+      number blockUpperBound = blockLowerBound + blockSize - 1;
       if (blockUpperBound > upperBound){
         blockUpperBound = upperBound;
       }
