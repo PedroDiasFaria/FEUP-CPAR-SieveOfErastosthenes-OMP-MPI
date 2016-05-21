@@ -21,7 +21,6 @@ const number two_pow_25 = 33554432;
 const number two_pow_32 = 4294967296;
 const int L1 = 128;   //256;   //L1 cache size  - 128@FEUP; 256@Home
 const int L2 = 1024;  //L2 cache size
-const int DEBUG = 0;
 
 /*Algorithms*/
   //Implement like the openmp, just divide the data in segments then let the rest process
@@ -32,7 +31,6 @@ number sieveMPI(number lowerBound, number upperBound) {
   //Since only odd numbers can be primes, we trim down the array to half it's size
   //(excluding all even numbers from the start)
   number prime_arraySize = (upperBound - lowerBound + 1)/2; //+1 to include the last number
-  //cout << "\n---\nLower bound: " << lowerBound << ". Upper bound: " << upperBound << ". Prime ArraySize: " << prime_arraySize << "\n---\n";
   char *isPrime = NULL;
   isPrime = (char*)malloc(prime_arraySize*sizeof(char));
 
@@ -66,17 +64,11 @@ number sieveMPI(number lowerBound, number upperBound) {
     //cout << "StartValue is = " << startValue << endl;
     if (startValue < i*i) {
       startValue = i*i;
-      if(DEBUG)
-      cout << "\tstartValue changed to = " << startValue << ". because < i*i" << endl;
     }
 
-    if(DEBUG)
-    cout << "startValue is = " << startValue << endl;
     //We only calculate from odd numbers
     if ((startValue % 2) == 0){
       startValue += i;
-      if(DEBUG)
-      cout << "\tstartvalue is pair, so changed to svalue + i : " << startValue << endl;
     }
 
     //Optimization purpose
@@ -85,26 +77,16 @@ number sieveMPI(number lowerBound, number upperBound) {
     for (j = startValue; j<=upperBound; j+=iDouble){
       number nonPrimeIndex = j - lowerBound;
       isPrime[nonPrimeIndex/2] = 0;
-      //cout << "\t\tstartValue is <= upperBound so nonPrimeIndex= " << nonPrimeIndex << ". j= " << j << ". isPrime[" << nonPrimeIndex/2 <<"] = 0." << endl;
     }
   }
 
-  if(DEBUG)
-  cout << "Iteration ended at i= " << i << endl;
-
   //Counting primes on array
-  number prime_count = 0;
-
   // 2 is the only even prime number, added to the count if it's in the segment
-  if (lowerBound == 2){
-    prime_count++;
-  }
+  number prime_count = (lowerBound == 2);
 
   for (i = 0; i < prime_arraySize; i++) {
     prime_count += isPrime[i];
   }
-
-    //  cout << "|||prime count neste processo: " << prime_count << "|||" << endl << endl;
 
   free(isPrime);
   return prime_count;
@@ -113,15 +95,10 @@ number sieveMPI(number lowerBound, number upperBound) {
 number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
 
   number segmentSize;
-  if(DEBUG)
-  segmentSize = 100;
-  if(!DEBUG)
   segmentSize = L1 * L2;
 
   number segmentLowerBound, segmentUpperBound;
   number prime_count = 0;
-
-  //clock_gettime(CLOCK_REALTIME, &startTime);
 
   // Main Loop
   #pragma omp parallel for reduction (+:prime_count) schedule (dynamic) num_threads(nr_threads)
@@ -158,7 +135,6 @@ int main (int argc, char *argv[])
     endl;
     return 0;
   }else{
-    //TODO ADD OTHER INPUT VALUES
     opt = atoi(argv[2]);
 
     if(strcmp(argv[1], "two_pow_25") == 0 ){
@@ -169,11 +145,11 @@ int main (int argc, char *argv[])
       limit = HUNDRED_THOUSAND;
     }else if(strcmp(argv[1],"TEN_MILLION") == 0){
       limit = TEN_MILLION;
+    }else if(strcmp(argv[1],"BILLION") == 0){
+      limit = BILLION;
     }else{
       limit = atoll(argv[1]);
     }
-
-
     if(argv[3])
       nr_threads = atoi(argv[3]);
   }
@@ -185,7 +161,6 @@ int main (int argc, char *argv[])
     number prime_count;
 
     /*Initializing MPI world*/
-
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_id);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
