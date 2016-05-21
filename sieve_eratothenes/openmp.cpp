@@ -78,7 +78,7 @@ number sieveBySequence(number upperBound, int nr_threads){
 
 
 //Segmented Sieve
-number countByBlock(number lowerBound, number upperBound) {
+number countBySegment(number lowerBound, number upperBound) {
 
   number i, j;
   //All odd numbers set to primes
@@ -152,7 +152,7 @@ number countByBlock(number lowerBound, number upperBound) {
   cout << "Iteration ended at i= " << i << endl;
 
   //Counting primes on array
-  // 2 is the only even prime number, added to the count if it's in the block
+  // 2 is the only even prime number, added to the count if it's in the segment
   number prime_count = (lowerBound == 2);
 
   for (i = 0; i < prime_arraySize; i++) {
@@ -165,30 +165,28 @@ number countByBlock(number lowerBound, number upperBound) {
   return prime_count;
 }
 
-number sieveByBlock(number upperBound, int nr_threads){
+number sieveBySegment(number upperBound, int nr_threads){
 
-  //TODO adjust size!
-
-  number blockSize;
+  number segmentSize;
   if(DEBUG)
-  blockSize = 7;
+  segmentSize = 7;
   if(!DEBUG)
-  blockSize = L1 * L2;
+  segmentSize = L1 * L2;
 
-  number blockLowerBound, prime_count = 0;
+  number segmentLowerBound, prime_count = 0;
 
   omp_set_num_threads(nr_threads);
   clock_gettime(CLOCK_REALTIME, &startTime);
 
   // Main Loop
   #pragma omp parallel for reduction (+:prime_count)
-    for (blockLowerBound = 2; blockLowerBound <= upperBound; blockLowerBound += blockSize){
-      number blockUpperBound = blockLowerBound + blockSize - 1;
-      if (blockUpperBound > upperBound){
-        blockUpperBound = upperBound;
+    for (segmentLowerBound = 2; segmentLowerBound <= upperBound; segmentLowerBound += segmentSize){
+      number segmentUpperBound = segmentLowerBound + segmentSize - 1;
+      if (segmentUpperBound > upperBound){
+        segmentUpperBound = upperBound;
       }
 
-    prime_count += countByBlock(blockLowerBound, blockUpperBound);
+    prime_count += countBySegment(segmentLowerBound, segmentUpperBound);
   }
   clock_gettime(CLOCK_REALTIME, &endTime);
 
@@ -212,13 +210,13 @@ int main (int argc, char *argv[])
     endl << "Usage: ./openmp <nr> <opt> <?nr_threads>" <<
     endl << "opt:" <<
     endl << "1. Sequential Algorithm" <<
-    endl << "2. Optimized (By block) Algorithm" <<
+    endl << "2. Optimized (By segment) Algorithm" <<
     endl;
     return 0;
   }else{
 
     opt = atoi(argv[2]);
-
+    //TODO ADD OTHER INPUT VALUES
     if(strcmp(argv[1], "two_pow_25") == 0 ){
       limit = two_pow_25;
     }else if(strcmp(argv[1], "two_pow_32") == 0 ){
@@ -238,8 +236,8 @@ int main (int argc, char *argv[])
       cout << "Number of primes to " << limit << ": " << sieveBySequence(limit, nr_threads) << endl << endl;
       break;
     case 2:
-      cout << "Executing Optimized (By block) Algorithm" << endl;
-      cout << "Number of primes to " << limit << ": " << sieveByBlock(limit, nr_threads) << endl << endl;
+      cout << "Executing Optimized (By Segment) Algorithm" << endl;
+      cout << "Number of primes to " << limit << ": " << sieveBySegment(limit, nr_threads) << endl << endl;
       break;
     default:
       cout << "Wrong option! opt=" << opt << ". Please use 1 or 2." << endl;

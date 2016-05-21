@@ -24,7 +24,7 @@ const int L2 = 1024;  //L2 cache size
 const int DEBUG = 0;
 
 /*Algorithms*/
-  //Implement like the openmp, just divide the data in blocks then let the rest process
+  //Implement like the openmp, just divide the data in segments then let the rest process
 number sieveMPI(number lowerBound, number upperBound) {
 
   number i, j;
@@ -95,7 +95,7 @@ number sieveMPI(number lowerBound, number upperBound) {
   //Counting primes on array
   number prime_count = 0;
 
-  // 2 is the only even prime number, added to the count if it's in the block
+  // 2 is the only even prime number, added to the count if it's in the segment
   if (lowerBound == 2){
     prime_count++;
   }
@@ -112,13 +112,13 @@ number sieveMPI(number lowerBound, number upperBound) {
 
 number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
 
-  number blockSize;
+  number segmentSize;
   if(DEBUG)
-  blockSize = 100;
+  segmentSize = 100;
   if(!DEBUG)
-  blockSize = L1 * L2;
+  segmentSize = L1 * L2;
 
-  number blockLowerBound, blockUpperBound;
+  number segmentLowerBound, segmentUpperBound;
   number prime_count = 0;
 
   omp_set_num_threads(nr_threads);
@@ -126,13 +126,13 @@ number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
 
   // Main Loop
   #pragma omp parallel for reduction (+:prime_count) schedule (dynamic)
-    for (blockLowerBound = lowerBound; blockLowerBound <= upperBound; blockLowerBound += blockSize){
-      number blockUpperBound = blockLowerBound + blockSize;
-      if (blockUpperBound > upperBound){
-        blockUpperBound = upperBound;
+    for (segmentLowerBound = lowerBound; segmentLowerBound <= upperBound; segmentLowerBound += segmentSize){
+      number segmentUpperBound = segmentLowerBound + segmentSize;
+      if (segmentUpperBound > upperBound){
+        segmentUpperBound = upperBound;
       }
 
-    prime_count += sieveMPI(blockLowerBound, blockUpperBound);
+    prime_count += sieveMPI(segmentLowerBound, segmentUpperBound);
   }
 
 	return prime_count;
@@ -159,7 +159,7 @@ int main (int argc, char *argv[])
     endl;
     return 0;
   }else{
-
+    //TODO ADD OTHER INPUT VALUES
     opt = atoi(argv[2]);
 
     if(strcmp(argv[1], "two_pow_25") == 0 ){
@@ -176,18 +176,18 @@ int main (int argc, char *argv[])
   }
 
     /*Variables to use in MPI world*/
-    int thread_id;
+    int rank_id;
     int world_size;
     number i, j;
     number prime_count;
 
     /*Initializing MPI world*/
 
-    MPI_Init(NULL, NULL);
-    MPI_Comm_rank(MPI_COMM_WORLD, &thread_id);
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank_id);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    if(thread_id == 0){
+    if(rank_id == 0){
       switch(opt){
         case 1:
           cout << "Executing as a Distributed Memory System in " << world_size << " Cores." << endl;
@@ -205,18 +205,18 @@ int main (int argc, char *argv[])
     clock_gettime(CLOCK_REALTIME, &startTime);
 
 
-    if(thread_id == 0){
+    if(rank_id == 0){
       //The remainder from sqrt(N) to N is divided by each thread
-      number blockSize = limit/world_size;
-      number bounds_buff[2];             //0 as the lowerBound, 1 as the upperBound of the block
-      number lowerBound = blockSize;      //First lowerBound is the 2nd thread's one = First upperBound of thread 0
+      number segmentSize = limit/world_size;
+      number bounds_buff[2];             //0 as the lowerBound, 1 as the upperBound of the segment
+      number lowerBound = segmentSize;      //First lowerBound is the 2nd thread's one = First upperBound of thread 0
 
       for(i=1; i<world_size; i++){
         //The last thread receives the remainder from the 2nd last until N
         if(i != world_size-1){
           bounds_buff[0] = lowerBound;
-          bounds_buff[1] = lowerBound + blockSize;
-          lowerBound +=blockSize; //Increments the lower bound for next block
+          bounds_buff[1] = lowerBound + segmentSize;
+          lowerBound +=segmentSize; //Increments the lower bound for next segment
         }else{
           bounds_buff[0] = lowerBound;
           bounds_buff[1] = limit;
@@ -229,10 +229,10 @@ int main (int argc, char *argv[])
 
       switch(opt){
         case 1:
-          prime_count = sieveMPI(2, blockSize);
+          prime_count = sieveMPI(2, segmentSize);
           break;
         case 2:
-          prime_count = sieveHybrid(2, blockSize, nr_threads);
+          prime_count = sieveHybrid(2, segmentSize, nr_threads);
           break;
         default:
           break;
