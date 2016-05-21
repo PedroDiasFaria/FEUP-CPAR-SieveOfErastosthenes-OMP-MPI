@@ -61,7 +61,6 @@ number sieveMPI(number lowerBound, number upperBound) {
     //Calculate offset of segmnent
     number startValue = ((lowerBound + i - 1)/i)*i;
 
-    //cout << "StartValue is = " << startValue << endl;
     if (startValue < i*i) {
       startValue = i*i;
     }
