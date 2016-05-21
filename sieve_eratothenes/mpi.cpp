@@ -121,11 +121,10 @@ number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
   number segmentLowerBound, segmentUpperBound;
   number prime_count = 0;
 
-  omp_set_num_threads(nr_threads);
-  clock_gettime(CLOCK_REALTIME, &startTime);
+  //clock_gettime(CLOCK_REALTIME, &startTime);
 
   // Main Loop
-  #pragma omp parallel for reduction (+:prime_count) schedule (dynamic)
+  #pragma omp parallel for reduction (+:prime_count) schedule (dynamic) num_threads(nr_threads)
     for (segmentLowerBound = lowerBound; segmentLowerBound <= upperBound; segmentLowerBound += segmentSize){
       number segmentUpperBound = segmentLowerBound + segmentSize;
       if (segmentUpperBound > upperBound){
@@ -166,6 +165,10 @@ int main (int argc, char *argv[])
       limit = two_pow_25;
     }else if(strcmp(argv[1], "two_pow_32") == 0 ){
       limit = two_pow_32;
+    }else if(strcmp(argv[1],"HUNDRED_THOUSAND") == 0){
+      limit = HUNDRED_THOUSAND;
+    }else if(strcmp(argv[1],"TEN_MILLION") == 0){
+      limit = TEN_MILLION;
     }else{
       limit = atoll(argv[1]);
     }

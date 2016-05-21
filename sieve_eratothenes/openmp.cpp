@@ -175,11 +175,10 @@ number sieveBySegment(number upperBound, int nr_threads){
 
   number segmentLowerBound, prime_count = 0;
 
-  omp_set_num_threads(nr_threads);
   clock_gettime(CLOCK_REALTIME, &startTime);
 
   // Main Loop
-  #pragma omp parallel for reduction (+:prime_count)
+  #pragma omp parallel for reduction (+:prime_count) num_threads(nr_threads)
     for (segmentLowerBound = 2; segmentLowerBound <= upperBound; segmentLowerBound += segmentSize){
       number segmentUpperBound = segmentLowerBound + segmentSize - 1;
       if (segmentUpperBound > upperBound){
@@ -217,10 +216,14 @@ int main (int argc, char *argv[])
 
     opt = atoi(argv[2]);
     //TODO ADD OTHER INPUT VALUES
-    if(strcmp(argv[1], "two_pow_25") == 0 ){
+    if(strcmp(argv[1], "two_pow_25") == 0){
       limit = two_pow_25;
-    }else if(strcmp(argv[1], "two_pow_32") == 0 ){
+    }else if(strcmp(argv[1], "two_pow_32") == 0){
       limit = two_pow_32;
+    }else if(strcmp(argv[1],"HUNDRED_THOUSAND") == 0){
+      limit = HUNDRED_THOUSAND;
+    }else if(strcmp(argv[1],"TEN_MILLION") == 0){
+      limit = TEN_MILLION;
     }else{
       limit = atoll(argv[1]);
     }
