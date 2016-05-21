@@ -102,7 +102,7 @@ number sieveHybrid(number lowerBound, number upperBound, int nr_threads) {
   // Main Loop
   #pragma omp parallel for reduction (+:prime_count) schedule (dynamic) num_threads(nr_threads)
     for (segmentLowerBound = lowerBound; segmentLowerBound <= upperBound; segmentLowerBound += segmentSize){
-      number segmentUpperBound = segmentLowerBound + segmentSize;
+      number segmentUpperBound = segmentLowerBound + segmentSize - 1;
       if (segmentUpperBound > upperBound){
         segmentUpperBound = upperBound;
       }

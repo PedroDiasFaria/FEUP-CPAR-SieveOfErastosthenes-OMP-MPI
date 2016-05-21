@@ -34,8 +34,8 @@ echo "2^32 Segmented Sieve Algorithm with 1 thread -> Expected 203280221"
 ./openmp two_pow_32 2
 date
 
-echo""
-echo"2 threads"
+echo ""
+echo "2 threads"
 echo "--- --- --- --- --- --- --- ---"
 echo "HUNDRED_THOUSAND Segmented Sieve Algorithm with 2 threads -> Expected 9592"
 ./openmp HUNDRED_THOUSAND 2 2
@@ -57,8 +57,8 @@ echo "2^32 Segmented Sieve Algorithm with 2 threads -> Expected 203280221"
 ./openmp two_pow_32 2 2
 date
 
-echo""
-echo"4 threads"
+echo ""
+echo "4 threads"
 echo "--- --- --- --- --- --- --- ---"
 echo "HUNDRED_THOUSAND Segmented Sieve Algorithm with 4 threads -> Expected 9592"
 ./openmp HUNDRED_THOUSAND 2 4
@@ -81,8 +81,8 @@ echo "2^32 Segmented Sieve Algorithm with 4 threads -> Expected 203280221"
 date
 
 
-echo""
-echo"8 threads"
+echo ""
+echo "8 threads"
 echo "--- --- --- --- --- --- --- ---"
 echo "HUNDRED_THOUSAND Segmented Sieve Algorithm with 8 threads -> Expected 9592"
 ./openmp HUNDRED_THOUSAND 2 8

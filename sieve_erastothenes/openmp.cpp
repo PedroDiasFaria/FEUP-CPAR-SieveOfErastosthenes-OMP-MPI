@@ -154,7 +154,7 @@ number sieveBySegment(number upperBound, int nr_threads){
   clock_gettime(CLOCK_REALTIME, &startTime);
 
   // Main Loop
-  #pragma omp parallel for reduction (+:prime_count) num_threads(nr_threads)
+  #pragma omp parallel for reduction (+:prime_count) schedule(dynamic) num_threads(nr_threads)
     for (segmentLowerBound = 2; segmentLowerBound <= upperBound; segmentLowerBound += segmentSize){
       number segmentUpperBound = segmentLowerBound + segmentSize - 1;
       if (segmentUpperBound > upperBound){
