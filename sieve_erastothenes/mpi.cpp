@@ -223,7 +223,7 @@ int main (int argc, char *argv[])
       }
       clock_gettime(CLOCK_REALTIME, &endTime);
       double executionTime = ( endTime.tv_sec - startTime.tv_sec ) + (double)( endTime.tv_nsec - startTime.tv_nsec ) / (double)BILLION;
-      cout << "\nTotal Time of execution: " << setprecision(3) << executionTime << " seconds" << endl << endl;
+      cout << "\nTotal Time of execution: " << setprecision(6) << executionTime << " seconds" << endl << endl;
 
       cout << "Number of primes to " << limit << ": " << prime_count << endl << endl;
     }else{

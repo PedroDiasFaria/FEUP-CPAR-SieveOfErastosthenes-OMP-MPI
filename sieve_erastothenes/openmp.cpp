@@ -69,7 +69,7 @@ number sieveBySequence(number upperBound, int nr_threads){
   clock_gettime(CLOCK_REALTIME, &endTime);
 
   double executionTime = ( endTime.tv_sec - startTime.tv_sec ) + (double)( endTime.tv_nsec - startTime.tv_nsec ) / (double)BILLION;
-  cout << "\nTotal Time of execution: " << setprecision(3) << executionTime << " seconds" << endl << endl;
+  cout << "\nTotal Time of execution: " << setprecision(6) << executionTime << " seconds" << endl << endl;
 
   free(isPrime);
   return prime_count;
@@ -166,7 +166,7 @@ number sieveBySegment(number upperBound, int nr_threads){
   clock_gettime(CLOCK_REALTIME, &endTime);
 
   double executionTime = ( endTime.tv_sec - startTime.tv_sec ) + (double)( endTime.tv_nsec - startTime.tv_nsec ) / (double)BILLION;
-  cout << "\nTotal Time of execution: " << setprecision(3) << executionTime << " seconds" << endl << endl;
+  cout << "\nTotal Time of execution: " << setprecision(6) << executionTime << " seconds" << endl << endl;
 
   return prime_count;
 }
