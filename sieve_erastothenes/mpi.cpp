@@ -1,5 +1,3 @@
-//http://paginas.fe.up.pt/~apm/REDAI/
-
 #include <mpi.h>
 #include <omp.h>
 #include <stdio.h>
